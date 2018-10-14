@@ -6,4 +6,5 @@ LABEL description="Continuous Integration of our Rails apps"
 RUN apt-get update; \
     apt-get install --yes --no-install-recommends \
             imagemagick \
-            nodejs
+            nodejs \
+            pdftk
