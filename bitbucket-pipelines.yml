@@ -1,0 +1,57 @@
+image: spacebabies:ci-2.4.1
+
+pipelines:
+  default:
+    - step: &run_tests
+        name: Run the tests
+        caches:
+          - bundler
+          - sprockets
+        script:
+          - export DATABASE_URL=postgresql://test_user:test_user_password@localhost/pipelines
+          - bundle install --deployment --jobs 4
+          - bundle exec rake db:setup
+          - bundle exec rake
+        services:
+          - postgres
+          - redis
+
+  branches:
+    master:
+      - step:
+          <<: *run_tests
+      - step:
+          name: New release notification
+          script:
+            - script/release.sh
+      - step:
+          name: Deploy to production
+          deploy: production
+          script:
+            - script/deploy.sh
+    staging:
+      - step:
+          <<: *run_tests
+      - step:
+          name: New release notification
+          script:
+            - script/release.sh
+      - step:
+          name: Deploy to staging
+          deploy: staging
+          script:
+            - script/deploy.sh
+
+definitions:
+  caches:
+    bundler: vendor/bundle
+    sprockets: tmp/cache
+  services:
+    postgres:
+      image: postgres
+      environment:
+        POSTGRES_DB: pipelines
+        POSTGRES_USER: test_user
+        POSTGRES_PASSWORD: test_user_password
+    redis:
+      image: redis:4
