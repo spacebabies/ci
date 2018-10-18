@@ -11,8 +11,10 @@ The examples build and deploy to staging and production. Add or remove
 environments to match yours.
 
 1. Copy `bitbucket_pipelines.yml` to the project root.
-2. Set the project environment variables in Bitbucket (see below).
-3. Enable Pipelines in Bitbucket
+2. Set the correct Ruby version in it.
+3. Commit and push so that Bitbucket knows what to do.
+4. Enable Pipelines in the project.
+5. Set the project environment variables in Bitbucket (see below).
 
 ## Use every day
 
@@ -24,13 +26,13 @@ You will need some environment variables.
 
 *Project Environment Variables*
 
-`REDEPLOYMENT_URL` - the production Cloud 66 redeployment hook
-`REDEPLOYMENT_URL_STAGING` - same for staging (if applicable)
-`SENTRY_AUTH_TOKEN` - Maybe this should move one level up
+`REDEPLOYMENT_HOOK` - the production Cloud 66 redeployment hook
+`STAGING_REDEPLOYMENT_HOOK` - same for staging (if applicable)
 `SENTRY_PROJECT` - the name of the project in Sentry
 
 *Account Variables*
 
+`SENTRY_AUTH_TOKEN` - Sentry authentication token
 `SENTRY_ORG` - should be set to `space-babies`
 
 ## Dev on this thing
