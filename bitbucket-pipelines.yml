@@ -1,4 +1,4 @@
-image: spacebabies:ci-2.4.1
+image: spacebabies/ci-2.4.1
 
 pipelines:
   default:
@@ -8,39 +8,43 @@ pipelines:
           - bundler
           - sprockets
         script:
+          - sentry-cli releases new ${BITBUCKET_COMMIT}
           - export DATABASE_URL=postgresql://test_user:test_user_password@localhost/pipelines
           - bundle install --deployment --jobs 4
-          - bundle exec rake db:setup
+          - bundle exec rake db:schema:load
           - bundle exec rake
         services:
           - postgres
           - redis
+    - step: &finalize_release
+        name: Finalize release
+        script:
+          - sentry-cli releases set-commits --commit "${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}@${BITBUCKET_COMMIT}" ${BITBUCKET_COMMIT}
+          - sentry-cli releases finalize ${BITBUCKET_COMMIT}
 
   branches:
     master:
       - step:
           <<: *run_tests
       - step:
-          name: New release notification
-          script:
-            - script/release.sh
+          <<: *finalize_release
       - step:
           name: Deploy to production
-          deploy: production
+          deployment: production
           script:
-            - script/deploy.sh
+            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e production
+            - curl -X POST $REDEPLOYMENT_HOOK
     staging:
       - step:
           <<: *run_tests
       - step:
-          name: New release notification
-          script:
-            - script/release.sh
+          <<: *finalize_release
       - step:
           name: Deploy to staging
-          deploy: staging
+          deployment: staging
           script:
-            - script/deploy.sh
+            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e staging
+            - curl -X POST $STAGING_REDEPLOYMENT_HOOK
 
 definitions:
   caches:
