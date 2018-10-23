@@ -37,7 +37,15 @@ You will need some environment variables.
 
 ## Dev on this thing
 
+For an entirely new Ruby version, copy one of the existing directories.
+Then build the image and/or make changes to the Dockerfile so that it builds
+cleanly and has everything required.
+
 ### Build and push to Docker hub
+
+Create a repo on Docker Hub if it doesn't exist already.
+
+To publish an image:
 
 ``` shell
 docker build -t spacebabies/ci-2.4.1:latest 2.4.1

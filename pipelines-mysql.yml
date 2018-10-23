@@ -1,0 +1,62 @@
+image: spacebabies/ci-2.4.1
+
+pipelines:
+  default:
+    - step: &run_tests
+        name: Run the tests
+        caches:
+          - bundler
+          - sprockets
+        script:
+          - sentry-cli releases new ${BITBUCKET_COMMIT}
+          - export DATABASE_URL=mysql2://test_user:test_user_password@localhost/pipelines
+          - bundle install --deployment --jobs 4
+          - bundle exec rake db:schema:load
+          - bundle exec rake
+        services:
+          - mysql
+          - redis
+    - step: &finalize_release
+        name: Finalize release
+        script:
+          - sentry-cli releases set-commits --commit "${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}@${BITBUCKET_COMMIT}" ${BITBUCKET_COMMIT}
+          - sentry-cli releases finalize ${BITBUCKET_COMMIT}
+
+  branches:
+    master:
+      - step:
+          <<: *run_tests
+      - step:
+          <<: *finalize_release
+      - step:
+          name: Deploy to production
+          deployment: production
+          script:
+            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e production
+            - curl -X POST $REDEPLOYMENT_HOOK
+    staging:
+      - step:
+          <<: *run_tests
+      - step:
+          <<: *finalize_release
+      - step:
+          name: Deploy to staging
+          deployment: staging
+          script:
+            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e staging
+            - curl -X POST $STAGING_REDEPLOYMENT_HOOK
+
+definitions:
+  caches:
+    bundler: vendor/bundle
+    sprockets: tmp/cache
+  services:
+    mysql:
+      image: mysql:5.7
+      environment:
+        MYSQL_DATABASE: 'pipelines'
+        MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+        MYSQL_USER: 'test_user'
+        MYSQL_PASSWORD: 'test_user_password'
+    redis:
+      image: redis:4
