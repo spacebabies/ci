@@ -1,51 +1,58 @@
 image: spacebabies/ci-2.4.1
-
-pipelines:
-  default:
-    - step: &run_tests
+options:
+  max_time: 5
+shared_steps:
+  - run_tests: &run_tests
         name: Run the tests
+        artifacts:
+          - log/test.log
         caches:
           - bundler
+          - node
           - sprockets
         script:
-          - sentry-cli releases new ${BITBUCKET_COMMIT}
           - export DATABASE_URL=mysql2://test_user:test_user_password@localhost/pipelines
+          - http --check-status --ignore-stdin --verbose https://sentry.io/api/0/organizations/${SENTRY_ORG}/releases/ "A
+uthorization:Bearer ${SENTRY_AUTH_TOKEN}" version=${BITBUCKET_COMMIT} projects:='["${SENTRY_PROJECT}"]'
           - bundle install --deployment --jobs 4
           - bundle exec rake db:schema:load
           - bundle exec rake
         services:
           - mysql
           - redis
-    - step: &finalize_release
+  - finalize_release: &finalize_release
         name: Finalize release
         script:
-          - sentry-cli releases set-commits --commit "${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}@${BITBUCKET_COMMIT}" ${BITBUCKET_COMMIT}
-          - sentry-cli releases finalize ${BITBUCKET_COMMIT}
-
+          - http --check-status --ignore-stdin --verbose PUT https://sentry.io/api/0/organizations/${SENTRY_ORG}/releases
+/${BITBUCKET_COMMIT}/ "Authorization:Bearer ${SENTRY_AUTH_TOKEN}" url=https://bitbucket.org/spacebabies/bouwvergunning/c
+ommits/${BITBUCKET_COMMIT}
+pipelines:
+  default:
+    - step: *run_tests
+    - step: *finalize_release
   branches:
-    master:
-      - step:
-          <<: *run_tests
-      - step:
-          <<: *finalize_release
-      - step:
-          name: Deploy to production
-          deployment: production
-          script:
-            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e production
-            - curl -X POST $REDEPLOYMENT_HOOK
     staging:
-      - step:
-          <<: *run_tests
-      - step:
-          <<: *finalize_release
+      - step: *run_tests
+      - step: *finalize_release
       - step:
           name: Deploy to staging
           deployment: staging
           script:
             - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e staging
-            - curl -X POST $STAGING_REDEPLOYMENT_HOOK
-
+            - http --check-status --ignore-stdin --verbose POST ${REDEPLOYMENT_HOOK}
+            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=${PUSHOVER_TOK
+EN} user=${PUSHOVER_USER} message='[${SENTRY_PROJECT}] staging deploy starting' priority=-1 sound=falling
+    master:
+      - step: *run_tests
+      - step: *finalize_release
+      - step:
+          name: Deploy to production
+          deployment: production
+          script:
+            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e production
+            - http --check-status --ignore-stdin --verbose POST ${REDEPLOYMENT_HOOK}
+            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=${PUSHOVER_TOK
+EN} user=${PUSHOVER_USER} message='[${SENTRY_PROJECT}] production deploy starting' priority=-1 sound=falling
 definitions:
   caches:
     bundler: vendor/bundle
