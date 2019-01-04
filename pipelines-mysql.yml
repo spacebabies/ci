@@ -1,3 +1,4 @@
+# belangrijk: vervang `project` voor de echte projectnaam.s
 image: spacebabies/ci-2.4.1
 options:
   max_time: 5
@@ -12,8 +13,7 @@ shared_steps:
           - sprockets
         script:
           - export DATABASE_URL=mysql2://test_user:test_user_password@localhost/pipelines
-          - http --check-status --ignore-stdin --verbose https://sentry.io/api/0/organizations/${SENTRY_ORG}/releases/ "A
-uthorization:Bearer ${SENTRY_AUTH_TOKEN}" version=${BITBUCKET_COMMIT} projects:='["${SENTRY_PROJECT}"]'
+          - http --check-status --ignore-stdin --verbose $SENTRY/releases/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" version=$BITBUCKET_COMMIT projects:='["project"]'
           - bundle install --deployment --jobs 4
           - bundle exec rake db:schema:load
           - bundle exec rake
@@ -23,9 +23,7 @@ uthorization:Bearer ${SENTRY_AUTH_TOKEN}" version=${BITBUCKET_COMMIT} projects:=
   - finalize_release: &finalize_release
         name: Finalize release
         script:
-          - http --check-status --ignore-stdin --verbose PUT https://sentry.io/api/0/organizations/${SENTRY_ORG}/releases
-/${BITBUCKET_COMMIT}/ "Authorization:Bearer ${SENTRY_AUTH_TOKEN}" url=https://bitbucket.org/spacebabies/bouwvergunning/c
-ommits/${BITBUCKET_COMMIT}
+          - http --check-status --ignore-stdin --verbose PUT $SENTRY/releases/$BITBUCKET_COMMIT/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" url=$BITBUCKET_GIT_HTTP_ORIGIN/commits/$BITBUCKET_COMMIT
 pipelines:
   default:
     - step: *run_tests
@@ -38,10 +36,9 @@ pipelines:
           name: Deploy to staging
           deployment: staging
           script:
-            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e staging
+            - http --check-status --ignore-stdin --verbose POST $SENTRY/releases/$BITBUCKET_COMMIT/deploys/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" environment=staging name='#$BITBUCKET_BUILD_NUMBER' url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments
             - http --check-status --ignore-stdin --verbose POST ${REDEPLOYMENT_HOOK}
-            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=${PUSHOVER_TOK
-EN} user=${PUSHOVER_USER} message='[${SENTRY_PROJECT}] staging deploy starting' priority=-1 sound=falling
+            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=$PUSHOVER_TOKEN user=$PUSHOVER_USER url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments message='[project] deploying to staging' priority=-1 sound=falling
     master:
       - step: *run_tests
       - step: *finalize_release
@@ -49,10 +46,9 @@ EN} user=${PUSHOVER_USER} message='[${SENTRY_PROJECT}] staging deploy starting' 
           name: Deploy to production
           deployment: production
           script:
-            - sentry-cli releases deploys ${BITBUCKET_COMMIT} new -e production
-            - http --check-status --ignore-stdin --verbose POST ${REDEPLOYMENT_HOOK}
-            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=${PUSHOVER_TOK
-EN} user=${PUSHOVER_USER} message='[${SENTRY_PROJECT}] production deploy starting' priority=-1 sound=falling
+            - http --check-status --ignore-stdin --verbose POST $SENTRY/releases/$BITBUCKET_COMMIT/deploys/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" environment=production name='#$BITBUCKET_BUILD_NUMBER' url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments
+            - http --check-status --ignore-stdin --verbose POST $REDEPLOYMENT_HOOK
+            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=$PUSHOVER_TOKEN user=$PUSHOVER_USER url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments message='[project] deploying to production' priority=-1 sound=falling
 definitions:
   caches:
     bundler: vendor/bundle
