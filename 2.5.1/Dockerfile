@@ -19,5 +19,3 @@ RUN apt-get update; \
             nodejs \
             pdftk \
             webp
-
-RUN gem install bundler --version '~> 2.0'
