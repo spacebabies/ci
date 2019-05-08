@@ -25,3 +25,8 @@ RUN apt-get update; \
             pdftk \
             webp \
             yarn
+
+RUN curl -sL https://sentry.io/get-cli/ | bash
+
+ENV LANG C.UTF-8
+
