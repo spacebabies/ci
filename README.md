@@ -24,16 +24,18 @@ See `bitbucket_pipelines.yml` included in this repo.
 
 You will need some environment variables.
 
-*Project Environment Variables*
+**Project Environment Variables**
 
-`REDEPLOYMENT_HOOK` - the production Cloud 66 redeployment hook
-`STAGING_REDEPLOYMENT_HOOK` - same for staging (if applicable)
-`SENTRY_PROJECT` - the name of the project in Sentry
+- [ ] `SENTRY_PROJECT` - the name of the project in Sentry
 
-*Account Variables*
+_When deployed to Cloud 66:_
+- [ ] `REDEPLOYMENT_HOOK` - the production Cloud 66 redeployment hook
+- [ ] `STAGING_REDEPLOYMENT_HOOK` - same for staging (if applicable)
 
-`SENTRY_AUTH_TOKEN` - Sentry authentication token
-`SENTRY_ORG` - should be set to `space-babies`
+**Account Variables**
+
+- [ ] `SENTRY_AUTH_TOKEN` - Sentry authentication token
+- [ ] `SENTRY_ORG` - should be set to `space-babies`
 
 ## Dev on this thing
 
