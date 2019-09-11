@@ -21,6 +21,8 @@ RUN apt-get update; \
             google-chrome-stable \
             httpie \
             imagemagick \
+            libvips \
+            librsvg2-dev \
             nodejs \
             pdftk \
             webp \
@@ -29,4 +31,3 @@ RUN apt-get update; \
 RUN curl -sL https://sentry.io/get-cli/ | bash
 
 ENV LANG C.UTF-8
-
