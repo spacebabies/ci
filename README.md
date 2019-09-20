@@ -24,11 +24,14 @@ See `bitbucket_pipelines.yml` included in this repo.
 
 You will need some environment variables.
 
-**Project Environment Variables**
+**Repository Environment Variables**
 
 - [ ] `SENTRY_PROJECT` - the name of the project in Sentry
 
+**Deployment Environment Variables**
+
 _When deployed to Cloud 66:_
+
 - [ ] `REDEPLOYMENT_HOOK` - the production Cloud 66 redeployment hook
 - [ ] `STAGING_REDEPLOYMENT_HOOK` - same for staging (if applicable)
 
