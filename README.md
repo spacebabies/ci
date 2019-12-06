@@ -10,7 +10,7 @@ Dockerfile. Change it to the Ruby version used in your project.
 The examples build and deploy to staging and production. Add or remove
 environments to match yours.
 
-1. Copy `bitbucket_pipelines.yml` to the project root.
+1. Create `bitbucket_pipelines.yml`. Two database examples are in this repo.
 2. Set the correct Ruby version in it.
 3. Commit and push so that Bitbucket knows what to do.
 4. Enable Pipelines in the project.
@@ -19,8 +19,6 @@ environments to match yours.
 ## Use every day
 
 ### Bitbucket Pipelines
-
-See `bitbucket_pipelines.yml` included in this repo.
 
 You will need some environment variables.
 

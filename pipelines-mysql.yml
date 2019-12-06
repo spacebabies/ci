@@ -1,58 +1,16 @@
-# belangrijk: vervang `project` voor de echte projectnaam.s
+# Example BitBucket pipeline for a mysql database.
 image: spacebabies/ci-2.4.1
-options:
-  max_time: 5
 shared_steps:
   - run_tests: &run_tests
         name: Run the tests
-        artifacts:
-          - log/test.log
-        caches:
-          - bundler
-          - node
-          - sprockets
         script:
           - export DATABASE_URL=mysql2://test_user:test_user_password@localhost/pipelines
-          - http --check-status --ignore-stdin --verbose $SENTRY/releases/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" version=$BITBUCKET_COMMIT projects:='["project"]'
-          - bundle install --deployment --jobs 4
-          - bundle exec rake db:schema:load
-          - bundle exec rake
         services:
           - mysql
-          - redis
-  - finalize_release: &finalize_release
-        name: Finalize release
-        script:
-          - http --check-status --ignore-stdin --verbose PUT $SENTRY/releases/$BITBUCKET_COMMIT/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" url=$BITBUCKET_GIT_HTTP_ORIGIN/commits/$BITBUCKET_COMMIT
 pipelines:
   default:
     - step: *run_tests
-    - step: *finalize_release
-  branches:
-    staging:
-      - step: *run_tests
-      - step: *finalize_release
-      - step:
-          name: Deploy to staging
-          deployment: staging
-          script:
-            - http --check-status --ignore-stdin --verbose POST $SENTRY/releases/$BITBUCKET_COMMIT/deploys/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" environment=staging name='#$BITBUCKET_BUILD_NUMBER' url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments
-            - http --check-status --ignore-stdin --verbose POST ${REDEPLOYMENT_HOOK}
-            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=$PUSHOVER_TOKEN user=$PUSHOVER_USER url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments message='[project] deploying to staging' priority=-1 sound=falling
-    master:
-      - step: *run_tests
-      - step: *finalize_release
-      - step:
-          name: Deploy to production
-          deployment: production
-          script:
-            - http --check-status --ignore-stdin --verbose POST $SENTRY/releases/$BITBUCKET_COMMIT/deploys/ "Authorization:Bearer $SENTRY_AUTH_TOKEN" environment=production name='#$BITBUCKET_BUILD_NUMBER' url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments
-            - http --check-status --ignore-stdin --verbose POST $REDEPLOYMENT_HOOK
-            - http --check-status --ignore-stdin --verbose https://api.pushover.net/1/messages.json token=$PUSHOVER_TOKEN user=$PUSHOVER_USER url=https://bitbucket.org/spacebabies/bouwvergunning/addon/pipelines/deployments message='[project] deploying to production' priority=-1 sound=falling
 definitions:
-  caches:
-    bundler: vendor/bundle
-    sprockets: tmp/cache
   services:
     mysql:
       image: mysql:5.7
@@ -61,5 +19,3 @@ definitions:
         MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
         MYSQL_USER: 'test_user'
         MYSQL_PASSWORD: 'test_user_password'
-    redis:
-      image: redis:4
